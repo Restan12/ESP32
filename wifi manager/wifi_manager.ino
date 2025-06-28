@@ -7,7 +7,7 @@
 
 const char* PARAM_INPUT_1 = "ssid";
 const char* PARAM_INPUT_2 = "pass";
-
+const char* PARAM_PLAIN = "plain";
 
 const char* ssidPath = "/ssid.txt";
 const char* passPath = "/pass.txt";
@@ -15,7 +15,7 @@ const char* passPath = "/pass.txt";
 String ssid;
 String pass;
 String ip;
-
+unsigned long previousMillis, currentMillis, interval=5000;
 AsyncWebServer server(80);
 
 String readFile(const char* path){
@@ -42,11 +42,10 @@ void writeFile(const char* path, const char* data) {
 bool initWiFi() {
    ssid = readFile(ssidPath);
   pass = readFile(passPath);
-  if (wifi_ssid == "") {
+  if (ssid == "") {
     Serial.println("Undefined SSID or IP address.");
     return false;
   }
-  WiFi.setHostname(hostname.c_str());
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), pass.c_str());
   Serial.println("Connecting to WiFi...");
@@ -84,7 +83,7 @@ void setup() {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
       request->send(200, "text/plain", "test. Post Data only");
     });
-      server.on("/wifi/save", HTTP_POST, [](AsyncWebServerRequest * request) {
+      server.on("/connect", HTTP_POST, [](AsyncWebServerRequest * request) {
       int params = request->params();
       String configData;
       DynamicJsonDocument doc(500);
@@ -96,18 +95,19 @@ void setup() {
           Serial.print(p->name());
           Serial.print(": ");
           Serial.println(p->value());
+          if (p->name() == PARAM_PLAIN) {
+           Serial.println(p->value());
+          }
           if (p->name() == PARAM_INPUT_1) {
             ssid = p->value().c_str();
             Serial.print("SSID set to: ");
             Serial.println(ssid);
             // Write FileSpiffs to save value
-            doc["wifi_ssid"] = ssid;
             writeFile(ssidPath, ssid.c_str());
           }
           // HTTP POST pass value
           if (p->name() == PARAM_INPUT_2) {
             pass = p->value().c_str();
-            doc["wifi_pass"] = pass;
             Serial.print("Password set to: ");
             Serial.println(pass);
             // Write FileSpiffsSpiffs to save value
