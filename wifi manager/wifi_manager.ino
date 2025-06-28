@@ -1,3 +1,9 @@
+/*********
+  Rui Santos & Sara Santos - Random Nerd Tutorials
+  Complete instructions at https://RandomNerdTutorials.com/esp32-wi-fi-manager-asyncwebserver/
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files.
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*********/
 #include <Arduino.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -74,14 +80,14 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 
 // Initialize WiFi
 bool initWiFi() {
-  if(ssid=="" || ip==""){
-    Serial.println("Undefined SSID or IP address.");
-    return false;
-  }
-
+  // if(ssid=="" ){
+  //   Serial.println("Undefined SSID or IP address.");
+  //   return false;
+  // }
+ssid = readFile(LittleFS, ssidPath);
+pass = readFile(LittleFS, passPath);
   WiFi.mode(WIFI_STA);
- ssid = readFile(LittleFS, ssidPath);
-  pass = readFile(LittleFS, passPath);
+
   WiFi.begin(ssid.c_str(), pass.c_str());
   Serial.println("Connecting to WiFi...");
 
@@ -112,18 +118,28 @@ void setup() {
   digitalWrite(ledPin, LOW);
   
   // Load values saved in LittleFS
- 
+  
   Serial.println(ssid);
   Serial.println(pass);
   Serial.println(ip);
-  
+  // delay(5000);
+
+  Serial.println(WiFi.localIP());
+ 
   if(initWiFi()) {
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
       request->send(200,  "text/html", "Success");
     });
+    server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String data="2798sahdk"; // for reset
+      writeFile(LittleFS, ssidPath, data.c_str());
+      writeFile(LittleFS, passPath, data.c_str());
+      request->send(200,  "text/html", "Success");
+    });
+   
     
-    server.begin();
+    server.begin(); 
   }
   else {
     // Connect to Wi-Fi network with SSID and password
